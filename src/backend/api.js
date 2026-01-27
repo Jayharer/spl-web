@@ -5,18 +5,19 @@ import { baseURL } from "./axios"
 export const apiSubmitForm = async (playerData) => {
 
     try {
-        const response = await axios.post(
-            baseURL + '/api/formsubmit',
-            { playerData },
+        const resp = await axios.post(
+            baseURL + '/saveplayer',
+            playerData,
             {
                 headers: {
                     'Content-Type': 'application/json',
                 }
             }
         )
-        console.log(response.data)
+        console.log(resp.data)
+        return resp;
     } catch (err) {
         console.log("api Error", err)
-        return {}
+        return err;
     }
 }

@@ -1,7 +1,7 @@
 import axios from "axios"
 
-export const baseURL = "http://127.0.0.1:3000";
-// export const baseURL = "https://u40jrtqib1.execute-api.us-east-1.amazonaws.com/dev";
+// export const baseURL = "http://127.0.0.1:3000";
+export const baseURL = "https://tscp4f1d0k.execute-api.us-east-1.amazonaws.com/prod";
 
 export const axiosInstance = axios.create({
   baseURL: baseURL,
