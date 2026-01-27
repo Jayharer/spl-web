@@ -443,3 +443,6 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
+# extra
+./.env
+./bin
