@@ -1,6 +1,7 @@
+import { toast } from 'react-toastify'
+
 import useInputFormField from "./shared/useInputFormField"
 import { apiSubmitForm } from './backend/api'
-import { toast } from 'react-toastify'
 import { loadRazorpay } from './loadRazorpay'
 
 var rzp;
@@ -18,7 +19,7 @@ const handlePayment = async () => {
     amount: 100,
     currency: 'INR',
     name: 'My App',
-    description: 'Test Transaction',
+    description: 'Player admission fees',
     order_id: "order_S8oBkKbDlduUFv",
     prefill: {
       name: "jay harer",
@@ -44,6 +45,11 @@ const handlePayment = async () => {
     console.log(resp.error.reason);
     console.log(resp.error.metadata.order_id);
     console.log(resp.error.metadata.payment_id);
+  });
+
+  rzp.on('payment.success', function (resp) {
+    console.log("success payment", resp);
+    saveFormdetails();
   });
 
 }
@@ -80,14 +86,13 @@ function App() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     handlePayment();
-    // saveFormdetails();
   }
 
   return (
     <div>
       <form onSubmit={handleSubmit}>
         <div>
-          <label>First Name</label>
+          <label className="underline">First Name</label>
           <input
             className="form-control"
             name="FirstName"
@@ -111,7 +116,9 @@ function App() {
           />
         </div>
         <div>
-          <button type="submit">Submit</button>
+          <h1 class="text-xs font-bold underline">
+            Hello world!
+        </h1>
         </div>
       </form>
     </div>
