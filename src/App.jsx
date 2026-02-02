@@ -1,126 +1,239 @@
+import { useState } from 'react'
 import { toast } from 'react-toastify'
+import { Button, Form, Input, Select, Modal } from 'antd';
+import _ from 'lodash';
 
-import useInputFormField from "./shared/useInputFormField"
-import { apiSubmitForm } from './backend/api'
-import { loadRazorpay } from './loadRazorpay'
+import { apiSubmitForm, apiCreateOrder } from './backend/api'
+import { loadRazorpay } from './shared/loadRazorpay'
 
 var rzp;
 
-const handlePayment = async () => {
-  const loaded = await loadRazorpay()
+const App = () => {
 
-  if (!loaded) {
-    alert('Razorpay SDK failed to load')
-    return
-  }
+  const [form] = Form.useForm();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const options = {
-    key: import.meta.env.VITE_RAZORPAY_KEY,
-    amount: 100,
-    currency: 'INR',
-    name: 'My App',
-    description: 'Player admission fees',
-    order_id: "order_S8oBkKbDlduUFv",
-    prefill: {
-      name: "jay harer",
-      email: "jay@gmail.com",
-      contact: "+917506988717"
-    },
-    theme: {
-      color: "#3399cc"
-    },
-    handler: function (resp) {
-      console.log(resp)
-    },
-  }
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
 
-  rzp = new Razorpay(options);
-  rzp.open();
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
 
-  rzp.on('payment.failed', function (resp) {
-    console.log(resp.error.code);
-    console.log(resp.error.description);
-    console.log(resp.error.source);
-    console.log(resp.error.step);
-    console.log(resp.error.reason);
-    console.log(resp.error.metadata.order_id);
-    console.log(resp.error.metadata.payment_id);
-  });
+  const onFill = () => {
+    form.setFieldsValue({
+      choiceno: "10", contact: "7506988717", email: "jay416505@gmail.com",
+      full_name: "Jayambar Harer", skill: "Bowling", tshirtsize: "L (40 inch)"
+    });
+  };
 
-  rzp.on('payment.success', function (resp) {
-    console.log("success payment", resp);
-    saveFormdetails();
-  });
+  const handlePayment = async (values) => {
+    const loaded = await loadRazorpay()
 
-}
-
-
-function App() {
-
-  var first_name = useInputFormField();
-  var last_name = useInputFormField();
-  var email = useInputFormField();
-  var contact = useInputFormField();
-
-  const saveFormdetails = async () => {
-    const userData = {
-      first_name: first_name.value,
-      last_name: last_name.value,
-      email: "jay@gmail.com",
-      contact: "7506988717"
-    }
-    console.log(userData)
-
-    const resp = await apiSubmitForm(userData);
-    if (resp.status_code === 200) {
-      toast.success("Success form submit")
-    } else {
-      toast.warning("Failed form submit")
+    if (!loaded) {
+      alert('Razorpay SDK failed to load')
+      return
     }
 
-    first_name.value = "";
-    last_name.value = "";
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY,
+      amount: 100,
+      currency: 'INR',
+      name: 'HPL Paymet',
+      description: 'Player admission fees',
+      order_id: "order_SBHpb7xmytmfUL",
+      prefill: {
+        name: values.full_name,
+        email: values.email,
+        contact: "+91" + values.contact
+      },
+      theme: {
+        color: "#3399cc"
+      },
+      handler: function (resp) {
+        console.log(resp)
+      },
+    }
+    console.log("options", options)
+    rzp = new Razorpay(options);
+    rzp.open();
+
+    rzp.on('payment.failed', function (resp) {
+      console.log("payment failed", resp);
+    });
+
+    rzp.on('payment.success', function (resp) {
+      console.log("success payment", resp);
+      const mergedResp = _.merge({}, values, resp.payload.payment);
+      _.set(mergedResp, "payment_id", mergedResp["id"]);
+      _.unset(mergedResp, "id");
+      console.log(mergedResp);
+      // saveFormdetails(values);
+    });
 
   }
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    handlePayment();
-  }
+  const handleOk = async () => {
+    const values = form.getFieldsValue();
+    console.log('Player data: ', values);
+    handlePayment(values);
+    // const resp = await apiCreateOrder();
+    // if (resp.status_code === 200) {
+    //   handlePayment(values);
+    // } else {
+    //   console.log(resp)
+    //   toast.warning("Failed to create order")
+    // }
+    setIsModalOpen(false);
+    form.resetFields();
+  };
+
+  const onSkillChange = value => {
+    switch (value) {
+      case 'batting':
+        form.setFieldsValue({ skill: 'Batting' });
+        break;
+      case 'bowling':
+        form.setFieldsValue({ skill: 'Bowling' });
+        break;
+      case 'allrounder':
+        form.setFieldsValue({ skill: 'All-Rounder' });
+        break;
+      default:
+    }
+  };
+
+  const onSizeChange = value => {
+    switch (value) {
+      case 'xs':
+        form.setFieldsValue({ tshirtsize: 'XS (34 inch)' });
+        break;
+      case 's':
+        form.setFieldsValue({ tshirtsize: 'S (36 inch)' });
+        break;
+      case 'l':
+        form.setFieldsValue({ tshirtsize: 'L (40 inch)' });
+        break;
+      case 'xl':
+        form.setFieldsValue({ tshirtsize: 'XL (42 inch)' });
+        break;
+      case '2xl':
+        form.setFieldsValue({ tshirtsize: '2XL (44 inch)' });
+        break;
+      case '3xl':
+        form.setFieldsValue({ tshirtsize: '3XL (46 inch)' });
+        break;
+      case '4xl':
+        form.setFieldsValue({ tshirtsize: '4XL (48 inch)' });
+        break;
+      default:
+    }
+  };
+
+  const onFinish = (values) => {
+    showModal();
+  };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label className="underline">First Name</label>
-          <input
-            className="form-control"
-            name="FirstName"
-            type="text"
-            value={first_name.value}
-            onChange={first_name.onChange}
-            placeholder="first name"
-            required
+    <div className="mt-10 ms-10">
+      <div className="ml-50">Hattiwade Premier League</div>
+      <br></br>
+      <Form
+        form={form}
+        name="basic"
+        labelCol={{ span: 8 }}
+        wrapperCol={{ span: 16 }}
+        style={{ maxWidth: 600 }}
+        initialValues={{ remember: true }}
+        onFinish={onFinish}
+        autoComplete="off"
+      >
+        <Form.Item
+          label="Email"
+          name="email"
+          rules={[{ required: true, message: 'Please input your email' }]}
+        >
+          <Input />
+        </Form.Item>
+
+        <Form.Item
+          label="Full Name"
+          name="full_name"
+          rules={[{ required: true, message: 'Please input your full name' }]}
+        >
+          <Input />
+        </Form.Item>
+
+        <Form.Item
+          label="WhatsApp No"
+          name="contact"
+          rules={[{ required: true, message: 'Please input your contact' }]}
+        >
+          <Input />
+        </Form.Item>
+
+        <Form.Item name="skill" label="Skills" rules={[{ required: true }]}>
+          <Select
+            allowClear
+            placeholder="Select skill"
+            onChange={onSkillChange}
+            options={[
+              { label: 'Batting', value: 'batting' },
+              { label: 'Bowling', value: 'bowling' },
+              { label: 'All-Rounder', value: 'allrounder' },
+            ]}
           />
-        </div>
-        <div>
-          <label>Last Name</label>
-          <input
-            className="form-control"
-            name="last_name"
-            type="text"
-            value={last_name.value}
-            onChange={last_name.onChange}
-            placeholder="last name"
-            required
+        </Form.Item>
+
+        <Form.Item name="tshirtsize" label="T-Shirt Size" rules={[{ required: true }]}>
+          <Select
+            allowClear
+            placeholder="Select T-Shirt Size"
+            onChange={onSizeChange}
+            options={[
+              { label: 'XS (34 inch)', value: 'xs' },
+              { label: 'S (36 inch)', value: 's' },
+              { label: 'L (40 inch)', value: 'l' },
+              { label: 'XL (42 inch)', value: 'xl' },
+              { label: '2XL (44 inch)', value: '2xl' },
+              { label: '3XL (46 inch)', value: '3xl' },
+              { label: '4XL (48 inch)', value: '4xl' },
+            ]}
           />
-        </div>
-        <div>
-          <h1 class="text-xs font-bold underline">
-            Hello world!
-        </h1>
-        </div>
-      </form>
+        </Form.Item>
+
+        <Form.Item
+          label="Choice Number on T-Shirt"
+          name="choiceno"
+          rules={[{ required: false, message: 'Please input your choice no' }]}
+        >
+          <Input />
+        </Form.Item>
+
+        <Form.Item label={null}>
+          <Button type="primary" htmlType="submit">
+            Submit & Pay
+          </Button>
+        </Form.Item>
+        {/* <Button type="link" htmlType="button" onClick={onFill}>
+          Fill form
+          </Button> */}
+      </Form>
+      <Modal
+        title="Confirm Details and Pay"
+        closable={{ 'aria-label': 'Custom Close Button' }}
+        open={isModalOpen}
+        onOk={handleOk}
+        onCancel={handleCancel}
+      >
+        <p> Email : {form.getFieldValue("email")}</p>
+        <p> Full Name : {form.getFieldValue("full_name")}</p>
+        <p> WhatsApp No : {form.getFieldValue("contact")}</p>
+        <p> Skills : {form.getFieldValue("skill")}</p>
+        <p> T-Shirt Size : {form.getFieldValue("tshirtsize")}</p>
+        <p> Choice Number on T-Shirt : {form.getFieldValue("choiceno")}</p>
+      </Modal>
     </div>
   )
 }
