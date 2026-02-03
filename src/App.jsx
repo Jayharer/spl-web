@@ -5,6 +5,7 @@ import _ from 'lodash';
 
 import { apiSubmitForm, apiCreateOrder } from './backend/api'
 import { loadRazorpay } from './shared/loadRazorpay'
+import ListPlayer from './components/ListPlayer'
 
 var rzp;
 
@@ -28,21 +29,29 @@ const App = () => {
     });
   };
 
-  const handlePayment = async (values) => {
+  const saveFormdetails = async (mergedResp) => {
+    const resp = await apiSubmitForm(mergedResp);
+    if (resp.status === 200) {
+      toast.success("Success form submit")
+    } else {
+      toast.error("Failed form submit")
+    }
+  }
+
+  const handlePayment = async (values, order) => {
     const loaded = await loadRazorpay()
 
     if (!loaded) {
       alert('Razorpay SDK failed to load')
       return
     }
-
     const options = {
       key: import.meta.env.VITE_RAZORPAY_KEY,
-      amount: 100,
+      amount: order["amount"],
       currency: 'INR',
       name: 'HPL Paymet',
       description: 'Player admission fees',
-      order_id: "order_SBHpb7xmytmfUL",
+      order_id: order["id"],
       prefill: {
         name: values.full_name,
         email: values.email,
@@ -69,22 +78,21 @@ const App = () => {
       _.set(mergedResp, "payment_id", mergedResp["id"]);
       _.unset(mergedResp, "id");
       console.log(mergedResp);
-      // saveFormdetails(values);
+      toast.success(`Success Payment By ${values.full_name}`)
+      saveFormdetails(mergedResp);
     });
-
   }
 
   const handleOk = async () => {
     const values = form.getFieldsValue();
     console.log('Player data: ', values);
-    handlePayment(values);
-    // const resp = await apiCreateOrder();
-    // if (resp.status_code === 200) {
-    //   handlePayment(values);
-    // } else {
-    //   console.log(resp)
-    //   toast.warning("Failed to create order")
-    // }
+    const resp = await apiCreateOrder();
+    if (resp.status === 200) {
+      handlePayment(values, resp.data.order);
+    } else {
+      console.log(resp)
+      toast.error("Failed to create order")
+    }
     setIsModalOpen(false);
     form.resetFields();
   };
@@ -218,7 +226,7 @@ const App = () => {
         </Form.Item>
         {/* <Button type="link" htmlType="button" onClick={onFill}>
           Fill form
-          </Button> */}
+        </Button> */}
       </Form>
       <Modal
         title="Confirm Details and Pay"
@@ -234,6 +242,9 @@ const App = () => {
         <p> T-Shirt Size : {form.getFieldValue("tshirtsize")}</p>
         <p> Choice Number on T-Shirt : {form.getFieldValue("choiceno")}</p>
       </Modal>
+      <div>
+        <ListPlayer></ListPlayer>
+      </div>
     </div>
   )
 }
