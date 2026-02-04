@@ -63,3 +63,21 @@ export const apiListPlayers = async () => {
         return err;
     }
 }
+
+
+export const apiListPlayers = async (files, username) => {
+    const formdata = new FormData();
+    if (files)
+        for (const key of Object.keys(files)) {
+            formdata.append('files', files[key])
+        }
+    try {
+        const resp = await api.post("/uploadFiles", formdata,
+            { params: { username: username } });
+        console.log(resp);
+        return resp;
+    } catch (err) {
+        console.error(err);
+        return err;
+    }
+}

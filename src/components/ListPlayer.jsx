@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { toast } from 'react-toastify'
 import axios from "axios";
-import { Table, message } from "antd";
+import { Table } from "antd";
 
 
 const ListPlayer = () => {
@@ -18,6 +19,21 @@ const ListPlayer = () => {
             title: "Contact",
             dataIndex: "contact",
             key: "contact",
+        },
+        {
+            title: "Skill",
+            dataIndex: "skill",
+            key: "skill",
+        },
+        {
+            title: "T-Shirt Size",
+            dataIndex: "tshirtsize",
+            key: "tshirtsize",
+        },
+        {
+            title: "Choice Number",
+            dataIndex: "choiceno",
+            key: "choiceno",
         },
     ];
 
@@ -37,7 +53,7 @@ const ListPlayer = () => {
 
             setData(tableData);
         } catch (error) {
-            message.error("Failed to load data");
+            toast.error("Failed to load data");
             console.error(error);
         } finally {
             setLoading(false);
@@ -49,11 +65,13 @@ const ListPlayer = () => {
     }, []);
 
     return (
-        <Table
-            columns={columns}
-            dataSource={data}
-            loading={loading}
-        ></Table>
+        <div className="mt-10 ms-20">
+            <Table
+                columns={columns}
+                dataSource={data}
+                loading={loading}
+            ></Table>
+        </div>
     );
 };
 

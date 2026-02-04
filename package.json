@@ -10,12 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-icons/all-files": "^4.1.0",
     "@tailwindcss/vite": "^4.1.18",
     "antd": "^6.2.2",
     "axios": "^1.13.3",
     "lodash": "^4.17.23",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.0",
     "react-toastify": "^11.0.5"
   },
   "devDependencies": {
