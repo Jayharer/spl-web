@@ -1,11 +1,15 @@
 import axios from 'axios'
 
 
+const submit_form_url = 'https://5paq22zotg.execute-api.us-east-1.amazonaws.com/prod/saveplayer';
+const create_order_url = "https://3ceod7mt8d.execute-api.us-east-1.amazonaws.com/prod/create_order"
+const list_players_url = 'https://5egpoykfxf.execute-api.us-east-1.amazonaws.com/prod/listplayer'
+
 export const apiSubmitForm = async (playerData) => {
 
     try {
         const resp = await axios.post(
-            'https://5paq22zotg.execute-api.us-east-1.amazonaws.com/prod/saveplayer',
+            submit_form_url,
             playerData,
             {
                 headers: {
@@ -26,7 +30,7 @@ export const apiCreateOrder = async () => {
 
     try {
         const resp = await axios.post(
-            "https://3ceod7mt8d.execute-api.us-east-1.amazonaws.com/prod/create_order",
+            create_order_url,
             {
                 headers: {
                     'Content-Type': 'application/json',
@@ -45,7 +49,7 @@ export const apiListPlayers = async () => {
 
     try {
         const resp = await axios.get(
-            'https://5egpoykfxf.execute-api.us-east-1.amazonaws.com/prod/listplayer',
+            list_players_url,
             {
                 headers: {
                     'Content-Type': 'application/json',
