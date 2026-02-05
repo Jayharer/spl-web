@@ -81,6 +81,7 @@ const Registration = () => {
             const mergedResp = _.merge({}, values, resp.payload.payment);
             _.set(mergedResp, "payment_id", mergedResp["id"]);
             _.unset(mergedResp, "id");
+            _.unset(mergedResp, "aadharid");
             console.log(mergedResp);
             saveFormdetails(mergedResp, formData);
         });

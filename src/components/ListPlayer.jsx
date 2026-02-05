@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { toast } from 'react-toastify'
-import axios from "axios";
-import { Table } from "antd";
-import { apiListPlayers } from "../backend/api";
+import { Table, Image, Modal } from "antd";
+import { EyeOutlined } from "@ant-design/icons";
+
+import { apiListPlayers, apiGetFile } from "../backend/api";
 
 
 const ListPlayer = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [visible, setVisible] = useState(false);
+    const [img, setImg] = useState("");
 
     // Table columns
     const columns = [
@@ -36,6 +39,15 @@ const ListPlayer = () => {
             dataIndex: "choiceno",
             key: "choiceno",
         },
+        {
+            title: "View",
+            render: (_, record) => (
+                <EyeOutlined
+                    style={{ cursor: "pointer" }}
+                    onClick={() => openImage(record.filename)}
+                />
+            ),
+        },
     ];
 
     const fetchData = async () => {
@@ -63,6 +75,13 @@ const ListPlayer = () => {
         fetchData();
     }, []);
 
+    const openImage = async (id) => {
+        const imgUrl = await apiGetFile(id);
+        console.log(imgUrl)
+        setImg(imgUrl);
+        setVisible(true);
+    };
+
     return (
         <div className="mt-10 ms-20">
             <Table
@@ -70,6 +89,14 @@ const ListPlayer = () => {
                 dataSource={data}
                 loading={loading}
             ></Table>
+            <Modal
+                open={visible}
+                footer={null}
+                onCancel={() => setVisible(false)}
+                title="Preview"
+            >
+                <img src={img} />
+            </Modal>
         </div>
     );
 };

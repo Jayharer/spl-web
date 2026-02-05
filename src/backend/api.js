@@ -1,10 +1,9 @@
 import axios from 'axios'
 
-const BASE_URL = "https://37a1bn8aad.execute-api.us-east-1.amazonaws.com/stage";
+const BASE_URL = "https://p24nbg0us3.execute-api.us-east-1.amazonaws.com/stage";
 
 
 export const apiSubmitForm = async (playerData) => {
-
     try {
         const resp = await axios.post(
             BASE_URL + "/saveplayer",
@@ -86,11 +85,11 @@ export const apiSaveFile = async (formData) => {
 
 export const apiGetFile = async (file_name) => {
     try {
-        const resp = await api.get(
+        const res = await axios.get(
             BASE_URL + "/get_file",
             { params: { file_name: file_name } });
-        console.log(resp);
-        return resp;
+        console.log(res)
+        return res.data.url;
     } catch (err) {
         console.error(err);
         return err;
