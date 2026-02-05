@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { toast } from 'react-toastify'
 import axios from "axios";
 import { Table } from "antd";
+import { apiListPlayers } from "../backend/api";
 
 
 const ListPlayer = () => {
@@ -41,9 +42,7 @@ const ListPlayer = () => {
         try {
             setLoading(true);
 
-            const resp = await axios.get(
-                'https://5egpoykfxf.execute-api.us-east-1.amazonaws.com/prod/listplayer'
-            );
+            const resp = await apiListPlayers();
             console.log("listplayer", resp)
             // AntD Table expects each row to have unique `key`
             const tableData = resp.data.data.map((item) => ({

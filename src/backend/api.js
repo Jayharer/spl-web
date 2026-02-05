@@ -1,15 +1,13 @@
 import axios from 'axios'
 
+const BASE_URL = "https://37a1bn8aad.execute-api.us-east-1.amazonaws.com/stage";
 
-const submit_form_url = 'https://5paq22zotg.execute-api.us-east-1.amazonaws.com/prod/saveplayer';
-const create_order_url = "https://3ceod7mt8d.execute-api.us-east-1.amazonaws.com/prod/create_order"
-const list_players_url = 'https://5egpoykfxf.execute-api.us-east-1.amazonaws.com/prod/listplayer'
 
 export const apiSubmitForm = async (playerData) => {
 
     try {
         const resp = await axios.post(
-            submit_form_url,
+            BASE_URL + "/saveplayer",
             playerData,
             {
                 headers: {
@@ -30,10 +28,11 @@ export const apiCreateOrder = async () => {
 
     try {
         const resp = await axios.post(
-            create_order_url,
+            BASE_URL + "/create_order",
             {
                 headers: {
                     'Content-Type': 'application/json',
+                    "Access-Control-Allow-Origin": "*",
                 }
             }
         )
@@ -49,15 +48,16 @@ export const apiListPlayers = async () => {
 
     try {
         const resp = await axios.get(
-            list_players_url,
+            BASE_URL + "/listplayer",
             {
                 headers: {
                     'Content-Type': 'application/json',
+                    "Access-Control-Allow-Origin": "*",
                 }
             }
         )
         console.log(resp)
-        return resp.data;
+        return resp;
     } catch (err) {
         console.log("api Error", err)
         return err;
@@ -65,15 +65,30 @@ export const apiListPlayers = async () => {
 }
 
 
-export const apiListPlayers = async (files, username) => {
-    const formdata = new FormData();
-    if (files)
-        for (const key of Object.keys(files)) {
-            formdata.append('files', files[key])
-        }
+export const apiSaveFile = async (formData) => {
     try {
-        const resp = await api.post("/uploadFiles", formdata,
-            { params: { username: username } });
+        const resp = await axios.post(
+            BASE_URL + "/save_file",
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                }
+            }
+        );
+        console.log(resp);
+        return resp;
+    } catch (err) {
+        console.error(err);
+        return err;
+    }
+}
+
+export const apiGetFile = async (file_name) => {
+    try {
+        const resp = await api.get(
+            BASE_URL + "/get_file",
+            { params: { file_name: file_name } });
         console.log(resp);
         return resp;
     } catch (err) {

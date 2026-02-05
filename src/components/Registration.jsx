@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { toast } from 'react-toastify'
-import { Button, Form, Input, Select, Modal } from 'antd';
+import { Button, Form, Input, Select, Modal, Upload } from 'antd';
 import _ from 'lodash';
+import { UploadOutlined } from '@ant-design/icons';
 
-import { apiSubmitForm, apiCreateOrder } from '../backend/api'
+import { apiSubmitForm, apiCreateOrder, apiSaveFile } from '../backend/api'
 import { loadRazorpay } from '../shared/loadRazorpay'
 import AppTitleBar from './AppTitleBar';
 
@@ -29,7 +30,9 @@ const Registration = () => {
         });
     };
 
-    const saveFormdetails = async (mergedResp) => {
+    const saveFormdetails = async (mergedResp, formData) => {
+        const resp1 = await apiSaveFile(formData);
+        mergedResp = { ...mergedResp, filename: resp1.data.file_name };
         const resp = await apiSubmitForm(mergedResp);
         if (resp.status === 200) {
             toast.success("Success form submit")
@@ -38,7 +41,7 @@ const Registration = () => {
         }
     }
 
-    const handlePayment = async (values, order) => {
+    const handlePayment = async (values, order, formData) => {
         const loaded = await loadRazorpay()
 
         if (!loaded) {
@@ -74,21 +77,35 @@ const Registration = () => {
 
         rzp.on('payment.success', function (resp) {
             console.log("success payment", resp);
+            toast.success(`Success Payment By ${values.full_name}`)
             const mergedResp = _.merge({}, values, resp.payload.payment);
             _.set(mergedResp, "payment_id", mergedResp["id"]);
             _.unset(mergedResp, "id");
             console.log(mergedResp);
-            toast.success(`Success Payment By ${values.full_name}`)
-            saveFormdetails(mergedResp);
+            saveFormdetails(mergedResp, formData);
         });
     }
 
     const handleOk = async () => {
         const values = form.getFieldsValue();
         console.log('Player data: ', values);
+        const file = values.aadharid[0]?.originFileObj;
+        console.log("file", file)
+        const formData = new FormData();
+        formData.append("file", file);
+
+        // const resp = await apiSaveFile(formData);
+        // console.log(resp)
+        // if (resp.status === 200) {
+        //     toast.success("File upload success")
+        // } else {
+        //     console.log(resp)
+        //     toast.error("File upload failed")
+        // }
+
         const resp = await apiCreateOrder();
         if (resp.status === 200) {
-            handlePayment(values, resp.data.order);
+            handlePayment(values, resp.data.order, formData);
         } else {
             console.log(resp)
             toast.error("Failed to create order")
@@ -219,14 +236,33 @@ const Registration = () => {
                         <Input />
                     </Form.Item>
 
+                    <Form.Item
+
+                        label="Upload AadharID"
+                        name="aadharid"
+                        valuePropName="fileList"
+                        getValueFromEvent={(e) => {
+                            if (Array.isArray(e)) return e;
+                            return e?.fileList;
+                        }}
+                        rules={[{ required: true, message: 'Please upload Aadhar photo ID' }]}
+                    >
+                        <Upload
+                            listType="picture"
+                            beforeUpload={() => false} >
+                            <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                        </Upload>
+                    </Form.Item>
+
                     <Form.Item label={null}>
                         <Button type="primary" htmlType="submit">
                             Submit & Pay
-          </Button>
+                        </Button>
                     </Form.Item>
-                    {/* <Button type="link" htmlType="button" onClick={onFill}>
-          Fill form
-        </Button> */}
+
+                    <Button type="link" htmlType="button" onClick={onFill}>
+                        Fill form
+                    </Button>
                 </Form>
             </div>
             <Modal
@@ -234,8 +270,7 @@ const Registration = () => {
                 closable={{ 'aria-label': 'Custom Close Button' }}
                 open={isModalOpen}
                 onOk={handleOk}
-                onCancel={handleCancel}
-            >
+                onCancel={handleCancel} >
                 <p> Email : {form.getFieldValue("email")}</p>
                 <p> Full Name : {form.getFieldValue("full_name")}</p>
                 <p> WhatsApp No : {form.getFieldValue("contact")}</p>
