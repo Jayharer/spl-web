@@ -118,8 +118,10 @@ const Registration = () => {
         const formData = new FormData();
         formData.append("file", file);
         _.unset(values, "aadharid");
-        if (couponData.code === true) {
+        if (couponData.used === true) {
             saveFormdetails(values, formData);
+            setIsModalOpen(false);
+            form.resetFields();
             return;
         }
 
@@ -288,6 +290,7 @@ const Registration = () => {
                     >
                         <Upload
                             listType="picture"
+                            maxCount={1}
                             beforeUpload={(file) => {
                                 const isImage =
                                     file.type === "image/jpeg" ||
@@ -339,7 +342,6 @@ const Registration = () => {
                             Submit & Pay
                         </Button>
                     </Form.Item>
-
                     {/* <Button type="link" htmlType="button" onClick={onFill}>
                         Fill form
                     </Button> */}
