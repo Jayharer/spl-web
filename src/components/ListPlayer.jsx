@@ -4,6 +4,7 @@ import { Table, Image, Modal } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
 
 import { apiListPlayers, apiGetFile } from "../backend/api";
+import AppTitleBar from "./AppTitleBar";
 
 
 const ListPlayer = () => {
@@ -15,12 +16,21 @@ const ListPlayer = () => {
     // Table columns
     const columns = [
         {
-            title: "Name",
+            title: "Image view",
+            render: (_, record) => (
+                <EyeOutlined
+                    style={{ cursor: "pointer" }}
+                    onClick={() => openImage(record.filename)}
+                />
+            ),
+        },
+        {
+            title: "Full name",
             dataIndex: "full_name",
             key: "full_name",
         },
         {
-            title: "Contact",
+            title: "Contact No",
             dataIndex: "contact",
             key: "contact",
         },
@@ -38,16 +48,7 @@ const ListPlayer = () => {
             title: "Choice Number",
             dataIndex: "choiceno",
             key: "choiceno",
-        },
-        {
-            title: "View",
-            render: (_, record) => (
-                <EyeOutlined
-                    style={{ cursor: "pointer" }}
-                    onClick={() => openImage(record.filename)}
-                />
-            ),
-        },
+        }
     ];
 
     const fetchData = async () => {
@@ -84,16 +85,19 @@ const ListPlayer = () => {
 
     return (
         <div className="mt-10 ms-20">
-            <Table
-                columns={columns}
-                dataSource={data}
-                loading={loading}
-            ></Table>
+            <AppTitleBar />
+            <div className="mt-6">
+                <Table
+                    columns={columns}
+                    dataSource={data}
+                    loading={loading}
+                ></Table>
+            </div>
             <Modal
                 open={visible}
                 footer={null}
                 onCancel={() => setVisible(false)}
-                title="Preview"
+                title="Photo"
             >
                 <img src={img} />
             </Modal>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { toast } from 'react-toastify'
 import { Button, Form, Input, Select, Modal, Upload } from 'antd';
 import _ from 'lodash';
-import { UploadOutlined } from '@ant-design/icons';
+import { UploadOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 import { apiSubmitForm, apiCreateOrder, apiSaveFile } from '../backend/api'
 import { loadRazorpay } from '../shared/loadRazorpay'
@@ -10,10 +10,13 @@ import AppTitleBar from './AppTitleBar';
 
 var rzp;
 
+const COUPON_LIST = ["XDR432", 'HUY654', 'GFT456', 'KID659', 'MKO987', 'ZSE845']
+
 const Registration = () => {
 
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [couponData, setCouponData] = useState({ click: false, code: false });
 
     const showModal = () => {
         setIsModalOpen(true);
@@ -81,7 +84,6 @@ const Registration = () => {
             const mergedResp = _.merge({}, values, resp.payload.payment);
             _.set(mergedResp, "payment_id", mergedResp["id"]);
             _.unset(mergedResp, "id");
-            _.unset(mergedResp, "aadharid");
             console.log(mergedResp);
             saveFormdetails(mergedResp, formData);
         });
@@ -94,15 +96,11 @@ const Registration = () => {
         console.log("file", file)
         const formData = new FormData();
         formData.append("file", file);
-
-        // const resp = await apiSaveFile(formData);
-        // console.log(resp)
-        // if (resp.status === 200) {
-        //     toast.success("File upload success")
-        // } else {
-        //     console.log(resp)
-        //     toast.error("File upload failed")
-        // }
+        _.unset(values, "aadharid");
+        if (couponData.code === true) {
+            saveFormdetails(values, formData);
+            return;
+        }
 
         const resp = await apiCreateOrder();
         if (resp.status === 200) {
@@ -161,6 +159,26 @@ const Registration = () => {
         showModal();
     };
 
+    const CheckCodeApply = (e) => {
+        const coupon_code = form.getFieldValue("couponcode");
+        setCouponData(prevData => ({ ...prevData, click: true }));
+        if (COUPON_LIST.includes(coupon_code)) {
+            setCouponData(prevData => ({ ...prevData, code: true }));
+        } else {
+            setCouponData(prevData => ({ ...prevData, code: false }));
+        }
+    };
+
+    const couponStatus = () => {
+        if (couponData.click && couponData.code)
+            return <CheckCircleOutlined style={{ fontSize: '25px' }}
+                className="bg-green-300 rounded-full mt-1" />
+        if (couponData.click && !couponData.code)
+            return <CloseCircleOutlined style={{ fontSize: '25px' }}
+                className="bg-red-500 rounded-full mt-1" />
+        return <div></div>
+    }
+
     return (
         <div className="mt-10 ms-20">
             <AppTitleBar />
@@ -178,9 +196,10 @@ const Registration = () => {
                     <Form.Item
                         label="Email"
                         name="email"
+
                         rules={[{ required: true, message: 'Please input your email' }]}
                     >
-                        <Input />
+                        <Input placeholder="Email" />
                     </Form.Item>
 
                     <Form.Item
@@ -188,7 +207,7 @@ const Registration = () => {
                         name="full_name"
                         rules={[{ required: true, message: 'Please input your full name' }]}
                     >
-                        <Input />
+                        <Input placeholder="Full Name" />
                     </Form.Item>
 
                     <Form.Item
@@ -196,7 +215,7 @@ const Registration = () => {
                         name="contact"
                         rules={[{ required: true, message: 'Please input your contact' }]}
                     >
-                        <Input />
+                        <Input placeholder="Contact No" />
                     </Form.Item>
 
                     <Form.Item name="skill" label="Skills" rules={[{ required: true }]}>
@@ -230,14 +249,6 @@ const Registration = () => {
                     </Form.Item>
 
                     <Form.Item
-                        label="Choice Number on T-Shirt"
-                        name="choiceno"
-                        rules={[{ required: false, message: 'Please input your choice no' }]}
-                    >
-                        <Input />
-                    </Form.Item>
-
-                    <Form.Item
 
                         label="Upload AadharID"
                         name="aadharid"
@@ -253,6 +264,26 @@ const Registration = () => {
                             beforeUpload={() => false} >
                             <Button icon={<UploadOutlined />}>Click to Upload</Button>
                         </Upload>
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Choice Number"
+                        name="choiceno"
+                        rules={[{ required: false, message: 'Please input your choice no' }]}
+                    >
+                        <Input placeholder="Choice No on T-Shirt" />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Coupon Code"
+                        name="couponcode"
+                        rules={[{ required: false, message: 'CODE' }]}
+                    >
+                        <div className="flex">
+                            <Input placeholder="COUPON CODE" />
+                            <Button variant="solid" className="ml-3 mr-3" onClick={CheckCodeApply}>Apply</Button>
+                            <div>{couponStatus()}</div>
+                        </div>
                     </Form.Item>
 
                     <Form.Item label={null}>
@@ -283,4 +314,13 @@ const Registration = () => {
     )
 }
 
-export default Registration
+export default Registration;
+
+// const resp = await apiSaveFile(formData);
+// console.log(resp)
+// if (resp.status === 200) {
+//     toast.success("File upload success")
+// } else {
+//     console.log(resp)
+//     toast.error("File upload failed")
+// }
