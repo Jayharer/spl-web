@@ -332,7 +332,7 @@ const Registration = () => {
                     >
                         <div className="flex">
                             <Input placeholder="COUPON CODE" />
-                            <Button variant="solid" className="ml-3 mr-3" onClick={CheckCodeApply}>Apply</Button>
+                            <Button color="purple" variant="solid" className="ml-3 mr-3" onClick={CheckCodeApply}>Apply</Button>
                             <div>{couponStatus()}</div>
                         </div>
                     </Form.Item>
