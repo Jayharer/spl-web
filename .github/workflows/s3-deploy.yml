@@ -24,4 +24,4 @@ jobs:
         env:
           VITE_RAZORPAY_KEY: ${{ secrets.VITE_RAZORPAY_KEY }}
       - name: Deploy app build to S3 bucket
-        run: aws s3 sync ./dist/ s3://spl-web --delete
+        run: aws s3 sync ./dist/ s3://sam-app-hpl-web --delete
