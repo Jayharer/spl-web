@@ -1,22 +1,29 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { Button, Form, Input, Select, Modal, Upload } from 'antd';
+import { Button, Form, Input, Select, Modal, Upload, InputNumber } from 'antd';
 import _ from 'lodash';
 import { UploadOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { v4 as uuidv4 } from 'uuid';
+import { useSelector, useDispatch } from 'react-redux'
+import { listCouponLoading, listCouponLoadSuccess, listCouponLoadFailure, listCouponLoadFlow } from '../backend/listCouponSlice'
 
-import { apiSubmitForm, apiCreateOrder, apiSaveFile } from '../backend/api'
+import { apiSubmitForm, apiCreateOrder, apiSaveFile, apiUpdateCoupon } from '../backend/api'
 import { loadRazorpay } from '../shared/loadRazorpay'
 import AppTitleBar from './AppTitleBar';
 
 var rzp;
 
-const COUPON_LIST = ["XDR432", 'HUY654', 'GFT456', 'KID659', 'MKO987', 'ZSE845']
-
 const Registration = () => {
 
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [couponData, setCouponData] = useState({ click: false, code: false });
+    const [couponData, setCouponData] = useState({ click: false, code: "", used: false });
+    const couponList = useSelector((state) => state.coupon.couponList)
+    const dispatch = useDispatch()
+
+    useEffect(() => {
+        dispatch(listCouponLoadFlow());
+    }, [dispatch])
 
     const showModal = () => {
         setIsModalOpen(true);
@@ -28,19 +35,30 @@ const Registration = () => {
 
     const onFill = () => {
         form.setFieldsValue({
-            choiceno: "10", contact: "7506988717", email: "jay416505@gmail.com",
+            choiceno: "10", contact: "7506988717",
             full_name: "Jayambar Harer", skill: "Bowling", tshirtsize: "L (40 inch)"
         });
     };
 
     const saveFormdetails = async (mergedResp, formData) => {
         const resp1 = await apiSaveFile(formData);
-        mergedResp = { ...mergedResp, filename: resp1.data.file_name };
-        const resp = await apiSubmitForm(mergedResp);
-        if (resp.status === 200) {
-            toast.success("Success form submit")
+        if (resp1.status === 200) {
+            mergedResp = { ...mergedResp, filename: resp1.data.file_name };
+            const resp2 = await apiSubmitForm(mergedResp);
+            if (resp2.status === 200) {
+                toast.success("Success form submit")
+                _.unset(couponData, "click");
+                const resp3 = await apiUpdateCoupon(couponData);
+                if (resp3.status === 200) {
+                    toast.success("Success coupon DB updated")
+                } else {
+                    toast.error("Failed coupon DB updated")
+                }
+            } else {
+                toast.error("Failed form submit")
+            }
         } else {
-            toast.error("Failed form submit")
+            toast.error("Failed to save photo")
         }
     }
 
@@ -60,7 +78,7 @@ const Registration = () => {
             order_id: order["id"],
             prefill: {
                 name: values.full_name,
-                email: values.email,
+                email: "jay416505@gmail.com",
                 contact: "+91" + values.contact
             },
             theme: {
@@ -90,8 +108,11 @@ const Registration = () => {
     }
 
     const handleOk = async () => {
-        const values = form.getFieldsValue();
-        console.log('Player data: ', values);
+        const email = uuidv4();
+        var values = form.getFieldsValue();
+        values = { ...values, email: email }
+        if (!couponData.used)
+            _.unset(values, "couponcode");
         const file = values.aadharid[0]?.originFileObj;
         console.log("file", file)
         const formData = new FormData();
@@ -162,18 +183,19 @@ const Registration = () => {
     const CheckCodeApply = (e) => {
         const coupon_code = form.getFieldValue("couponcode");
         setCouponData(prevData => ({ ...prevData, click: true }));
-        if (COUPON_LIST.includes(coupon_code)) {
-            setCouponData(prevData => ({ ...prevData, code: true }));
+        const applied_coupon = couponList.find(cp => cp.code === coupon_code && cp.used === false);
+        if (applied_coupon && !applied_coupon.used) {
+            setCouponData(prevData => ({ ...prevData, used: true, code: coupon_code }));
         } else {
-            setCouponData(prevData => ({ ...prevData, code: false }));
+            setCouponData(prevData => ({ ...prevData, used: false }));
         }
     };
 
     const couponStatus = () => {
-        if (couponData.click && couponData.code)
+        if (couponData.click && couponData.used)
             return <CheckCircleOutlined style={{ fontSize: '25px' }}
                 className="bg-green-300 rounded-full mt-1" />
-        if (couponData.click && !couponData.code)
+        if (couponData.click && !couponData.used)
             return <CloseCircleOutlined style={{ fontSize: '25px' }}
                 className="bg-red-500 rounded-full mt-1" />
         return <div></div>
@@ -193,29 +215,35 @@ const Registration = () => {
                     onFinish={onFinish}
                     autoComplete="off"
                 >
-                    <Form.Item
+                    {/* <Form.Item
                         label="Email"
                         name="email"
 
                         rules={[{ required: true, message: 'Please input your email' }]}
                     >
                         <Input placeholder="Email" />
-                    </Form.Item>
+                    </Form.Item> */}
 
                     <Form.Item
                         label="Full Name"
                         name="full_name"
                         rules={[{ required: true, message: 'Please input your full name' }]}
                     >
-                        <Input placeholder="Full Name" />
+                        <Input style={{ textTransform: "uppercase" }} placeholder="Full Name" />
                     </Form.Item>
 
                     <Form.Item
                         label="WhatsApp No"
                         name="contact"
-                        rules={[{ required: true, message: 'Please input your contact' }]}
+                        rules={[
+                            { required: true, message: "Please enter phone number" },
+                            {
+                                pattern: /^[6-9]\d{9}$/,
+                                message: "Enter valid 10 digit mobile number",
+                            },
+                        ]}
                     >
-                        <Input placeholder="Contact No" />
+                        <Input maxLength={10} placeholder="Contact No" />
                     </Form.Item>
 
                     <Form.Item name="skill" label="Skills" rules={[{ required: true }]}>
@@ -249,8 +277,7 @@ const Registration = () => {
                     </Form.Item>
 
                     <Form.Item
-
-                        label="Upload AadharID"
+                        label="Photo: "
                         name="aadharid"
                         valuePropName="fileList"
                         getValueFromEvent={(e) => {
@@ -261,7 +288,23 @@ const Registration = () => {
                     >
                         <Upload
                             listType="picture"
-                            beforeUpload={() => false} >
+                            beforeUpload={(file) => {
+                                const isImage =
+                                    file.type === "image/jpeg" ||
+                                    file.type === "image/png" ||
+                                    file.type === "image/jpg";
+                                if (!isImage) {
+                                    message.error("Only JPG/PNG files allowed");
+                                    return Upload.LIST_IGNORE;
+                                }
+                                const isLt5M = file.size / 1024 / 1024 < 0.5;
+                                if (!isLt5M) {
+                                    message.error("Image must be smaller than 500KB");
+                                    return Upload.LIST_IGNORE;
+                                }
+                                return false;
+                            }}
+                        >
                             <Button icon={<UploadOutlined />}>Click to Upload</Button>
                         </Upload>
                     </Form.Item>
@@ -269,7 +312,12 @@ const Registration = () => {
                     <Form.Item
                         label="Choice Number"
                         name="choiceno"
-                        rules={[{ required: false, message: 'Please input your choice no' }]}
+                        rules={[
+                            {
+                                required: false,
+                                message: 'Please input your choice no',
+                            }
+                        ]}
                     >
                         <Input placeholder="Choice No on T-Shirt" />
                     </Form.Item>
@@ -292,9 +340,9 @@ const Registration = () => {
                         </Button>
                     </Form.Item>
 
-                    <Button type="link" htmlType="button" onClick={onFill}>
+                    {/* <Button type="link" htmlType="button" onClick={onFill}>
                         Fill form
-                    </Button>
+                    </Button> */}
                 </Form>
             </div>
             <Modal
@@ -303,7 +351,6 @@ const Registration = () => {
                 open={isModalOpen}
                 onOk={handleOk}
                 onCancel={handleCancel} >
-                <p> Email : {form.getFieldValue("email")}</p>
                 <p> Full Name : {form.getFieldValue("full_name")}</p>
                 <p> WhatsApp No : {form.getFieldValue("contact")}</p>
                 <p> Skills : {form.getFieldValue("skill")}</p>

@@ -16,7 +16,7 @@ const ListPlayer = () => {
     // Table columns
     const columns = [
         {
-            title: "Image view",
+            title: "Player photo",
             render: (_, record) => (
                 <EyeOutlined
                     style={{ cursor: "pointer" }}

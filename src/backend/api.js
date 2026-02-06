@@ -95,3 +95,43 @@ export const apiGetFile = async (file_name) => {
         return err;
     }
 }
+
+export const apiListCoupon = async () => {
+
+    try {
+        const resp = await axios.get(
+            BASE_URL + "/list_coupon",
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    "Access-Control-Allow-Origin": "*",
+                }
+            }
+        )
+        console.log(resp)
+        return resp.data;
+    } catch (err) {
+        console.log("api apiListCoupon Error", err)
+        return [];
+    }
+}
+
+export const apiUpdateCoupon = async (couponData) => {
+    try {
+        const resp = await axios.post(
+            BASE_URL + "/update_coupon",
+            couponData,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    "Access-Control-Allow-Origin": "*",
+                }
+            }
+        )
+        console.log(resp)
+        return resp;
+    } catch (err) {
+        console.log("api apiUpdateCoupon Error", err)
+        return err;
+    }
+}
