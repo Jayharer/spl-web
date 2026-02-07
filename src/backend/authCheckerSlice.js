@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 export const initialState = {
-    auth: false,
+    auth: localStorage.getItem("isAuth") === "true",
 }
 
 const authCheckerSlice = createSlice({

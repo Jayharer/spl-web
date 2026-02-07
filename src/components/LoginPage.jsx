@@ -17,6 +17,7 @@ const LoginPage = () => {
         console.log("Login Values:", values);
         if (values.username === USERNAME && values.password == PASSWORD) {
             dispatch(authCheckerLoadSuccess())
+            localStorage.setItem("isAuth", "true");
             navigate("/players")
         }
     };

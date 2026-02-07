@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { Button, Form, Input, Select, Modal, Upload, Spin } from 'antd';
+import { Button, Form, Input, Select, Modal, Upload, Spin, Checkbox, ConfigProvider } from 'antd';
 import _ from 'lodash';
 import { UploadOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,13 +10,14 @@ import { listCouponLoadFlow } from '../backend/listCouponSlice'
 import { apiSubmitForm, apiCreateOrder, apiSaveFile, apiUpdateCoupon } from '../backend/api'
 import { loadRazorpay } from '../shared/loadRazorpay'
 import AppTitleBar from './AppTitleBar';
+import TermsAndCondition from './TermsAndCondition'
 
 var rzp;
 
 const Registration = () => {
-
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [openModel, setOpenModel] = useState(false);
     const [loading, setLoading] = useState(false);
     const [couponData, setCouponData] = useState({ click: false, code: "", used: false });
     const couponList = useSelector((state) => state.coupon.couponList)
@@ -32,6 +33,7 @@ const Registration = () => {
 
     const handleCancel = () => {
         setIsModalOpen(false);
+        setOpenModel(false);
     };
 
     const onFill = () => {
@@ -121,13 +123,14 @@ const Registration = () => {
         const formData = new FormData();
         formData.append("file", file);
         _.unset(values, "aadharid");
+        _.unset(values, "terms");
         if (couponData.used === true) {
             setLoading(true)
-            saveFormdetails(values, formData);
             setIsModalOpen(false);
+            await saveFormdetails(values, formData);
             form.resetFields();
-            setLoading(false)
             setCouponData(prevData => ({ ...prevData, click: false }));
+            setLoading(false)
             return;
         }
 
@@ -205,16 +208,15 @@ const Registration = () => {
             return <CheckCircleOutlined style={{ fontSize: '25px' }}
                 className="bg-green-300 rounded-full mt-1" />
         if (couponData.click && !couponData.used)
-            return <CloseCircleOutlined style={{ fontSize: '25px' }}
-                className="bg-red-500 rounded-full mt-1" />
+            form.resetFields(["couponcode"]);
         return <div></div>
     }
 
     return (
-        <Spin spinning={loading} tip="Loading...">
-            <div className="mt-10 ms-20">
+        <Spin spinning={loading} size="large">
+            <div className="mt-10 ms-20" style={{ minHeight: 200 }}>
                 <AppTitleBar />
-                <div className="mt-10">
+                <div className="mt-5">
                     <Form
                         form={form}
                         name="basic"
@@ -239,7 +241,13 @@ const Registration = () => {
                             name="full_name"
                             rules={[{ required: true, message: 'Please input your full name' }]}
                         >
-                            <Input style={{ textTransform: "uppercase" }} placeholder="Full Name" />
+                            <Input
+                                onChange={(e) => {
+                                    form.setFieldsValue({
+                                        full_name: e.target.value.toUpperCase(),
+                                    });
+                                }}
+                                placeholder="Full Name" />
                         </Form.Item>
 
                         <Form.Item
@@ -305,12 +313,15 @@ const Registration = () => {
                                         file.type === "image/png" ||
                                         file.type === "image/jpg";
                                     if (!isImage) {
-                                        message.error("Only JPG/PNG files allowed");
+                                        toast.warning("Only JPG/PNG/JPEG files allowed");
                                         return Upload.LIST_IGNORE;
                                     }
-                                    const isLt5M = file.size / 1024 / 1024 < 0.5;
+                                    console.log("file.size", file.size)
+                                    const isLt5M = (file.size / 1024) < 1024.0;
+                                    console.log("isLt5M", isLt5M)
                                     if (!isLt5M) {
-                                        message.error("Image must be smaller than 500KB");
+                                        console.log("ok")
+                                        toast.warning("Image must be smaller than 1MB");
                                         return Upload.LIST_IGNORE;
                                     }
                                     return false;
@@ -345,14 +356,49 @@ const Registration = () => {
                             </div>
                         </Form.Item>
 
+                        <Form.Item
+                            label="Terms & Conditions"
+                            name="terms"
+                            valuePropName="checked"   // 🔥 IMPORTANT
+                            rules={[
+                                {
+                                    validator: (_, value) =>
+                                        value
+                                            ? Promise.resolve()
+                                            : Promise.reject("You must accept terms"),
+                                },
+                            ]}
+                        >
+                            <div className="ml-20">
+                                <ConfigProvider
+                                    theme={{
+                                        token: {
+                                            controlInteractiveSize: 20,   // bigger box
+                                            colorPrimary: "#7c3aed",
+                                            colorBorder: "#7c3aed",          // 🔥 outline border
+                                            borderRadiusSM: 4,               // rounded corner
+                                            controlOutline: "#ddd6fe",       // tick color
+                                        },
+                                    }}
+                                >
+                                    <Checkbox style={{
+                                        fontSize: 16,
+                                        color: "#360113f", width: "50px"
+                                    }} > </Checkbox>
+                                </ConfigProvider>
+                                <Button onClick={() => setOpenModel(true)}>
+                                    Show Terms</Button>
+                            </div>
+                        </Form.Item>
+
                         <Form.Item label={null}>
                             <Button type="primary" htmlType="submit">
                                 Submit & Pay
                         </Button>
                         </Form.Item>
-                        <Button type="link" htmlType="button" onClick={onFill}>
+                        {/* <Button type="link" htmlType="button" onClick={onFill}>
                             Fill form
-                    </Button>
+                        </Button> */}
                     </Form>
                 </div>
                 <Modal
@@ -360,7 +406,7 @@ const Registration = () => {
                     closable={{ 'aria-label': 'Custom Close Button' }}
                     open={isModalOpen}
                     footer={[
-                        <div style={{ textAlign: "right" }}>
+                        <div style={{ textAlign: "right" }} key="key1">
                             <Button type="primary" onClick={handleSubmit}>
                                 Submit
                         </Button>
@@ -372,6 +418,14 @@ const Registration = () => {
                     <p> Skills : {form.getFieldValue("skill")}</p>
                     <p> T-Shirt Size : {form.getFieldValue("tshirtsize")}</p>
                     <p> Choice Number on T-Shirt : {form.getFieldValue("choiceno")}</p>
+                </Modal>
+                <Modal
+                    title="Terms & Conditions"
+                    closable={{ 'aria-label': 'Custom Close Button' }}
+                    open={openModel}
+                    footer={[]}
+                    onCancel={handleCancel} >
+                    <TermsAndCondition />
                 </Modal>
             </div>
         </Spin>

@@ -7,7 +7,6 @@ import SideNavBar from './components/SideNavBar'
 import PrivateRoute from './components/PrivateRoute';
 import LoginPage from './components/LoginPage';
 
-
 const App = () => {
 
   return (
