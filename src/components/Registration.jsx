@@ -362,6 +362,7 @@ const Registration = () => {
                             valuePropName="checked"   // 🔥 IMPORTANT
                             rules={[
                                 {
+                                    required: true,
                                     validator: (_, value) =>
                                         value
                                             ? Promise.resolve()
