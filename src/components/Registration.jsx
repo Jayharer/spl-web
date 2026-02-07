@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { Button, Form, Input, Select, Modal, Upload, InputNumber } from 'antd';
+import { Button, Form, Input, Select, Modal, Upload, Spin } from 'antd';
 import _ from 'lodash';
 import { UploadOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
 import { useSelector, useDispatch } from 'react-redux'
-import { listCouponLoading, listCouponLoadSuccess, listCouponLoadFailure, listCouponLoadFlow } from '../backend/listCouponSlice'
+import { listCouponLoadFlow } from '../backend/listCouponSlice'
 
 import { apiSubmitForm, apiCreateOrder, apiSaveFile, apiUpdateCoupon } from '../backend/api'
 import { loadRazorpay } from '../shared/loadRazorpay'
@@ -17,6 +17,7 @@ const Registration = () => {
 
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [couponData, setCouponData] = useState({ click: false, code: "", used: false });
     const couponList = useSelector((state) => state.coupon.couponList)
     const dispatch = useDispatch()
@@ -48,11 +49,13 @@ const Registration = () => {
             if (resp2.status === 200) {
                 toast.success("Success form submit")
                 _.unset(couponData, "click");
-                const resp3 = await apiUpdateCoupon(couponData);
-                if (resp3.status === 200) {
-                    toast.success("Success coupon DB updated")
-                } else {
-                    toast.error("Failed coupon DB updated")
+                if (couponData.used) {
+                    const resp3 = await apiUpdateCoupon(couponData);
+                    if (resp3.status === 200) {
+                        toast.success("Success coupon DB updated")
+                    } else {
+                        toast.error("Failed coupon DB updated")
+                    }
                 }
             } else {
                 toast.error("Failed form submit")
@@ -107,7 +110,7 @@ const Registration = () => {
         });
     }
 
-    const handleOk = async () => {
+    const handleSubmit = async () => {
         const email = uuidv4();
         var values = form.getFieldsValue();
         values = { ...values, email: email }
@@ -119,9 +122,12 @@ const Registration = () => {
         formData.append("file", file);
         _.unset(values, "aadharid");
         if (couponData.used === true) {
+            setLoading(true)
             saveFormdetails(values, formData);
             setIsModalOpen(false);
             form.resetFields();
+            setLoading(false)
+            setCouponData(prevData => ({ ...prevData, click: false }));
             return;
         }
 
@@ -134,6 +140,7 @@ const Registration = () => {
         }
         setIsModalOpen(false);
         form.resetFields();
+        setCouponData(prevData => ({ ...prevData, click: false }));
     };
 
     const onSkillChange = value => {
@@ -189,7 +196,7 @@ const Registration = () => {
         if (applied_coupon && !applied_coupon.used) {
             setCouponData(prevData => ({ ...prevData, used: true, code: coupon_code }));
         } else {
-            setCouponData(prevData => ({ ...prevData, used: false }));
+            setCouponData(prevData => ({ ...prevData, used: false, code: "" }));
         }
     };
 
@@ -204,20 +211,21 @@ const Registration = () => {
     }
 
     return (
-        <div className="mt-10 ms-20">
-            <AppTitleBar />
-            <div className="mt-10">
-                <Form
-                    form={form}
-                    name="basic"
-                    labelCol={{ span: 8 }}
-                    wrapperCol={{ span: 16 }}
-                    style={{ maxWidth: 600 }}
-                    initialValues={{ remember: true }}
-                    onFinish={onFinish}
-                    autoComplete="off"
-                >
-                    {/* <Form.Item
+        <Spin spinning={loading} tip="Loading...">
+            <div className="mt-10 ms-20">
+                <AppTitleBar />
+                <div className="mt-10">
+                    <Form
+                        form={form}
+                        name="basic"
+                        labelCol={{ span: 8 }}
+                        wrapperCol={{ span: 16 }}
+                        style={{ maxWidth: 600 }}
+                        initialValues={{ remember: true }}
+                        onFinish={onFinish}
+                        autoComplete="off"
+                    >
+                        {/* <Form.Item
                         label="Email"
                         name="email"
 
@@ -226,140 +234,147 @@ const Registration = () => {
                         <Input placeholder="Email" />
                     </Form.Item> */}
 
-                    <Form.Item
-                        label="Full Name"
-                        name="full_name"
-                        rules={[{ required: true, message: 'Please input your full name' }]}
-                    >
-                        <Input style={{ textTransform: "uppercase" }} placeholder="Full Name" />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="WhatsApp No"
-                        name="contact"
-                        rules={[
-                            { required: true, message: "Please enter phone number" },
-                            {
-                                pattern: /^[6-9]\d{9}$/,
-                                message: "Enter valid 10 digit mobile number",
-                            },
-                        ]}
-                    >
-                        <Input maxLength={10} placeholder="Contact No" />
-                    </Form.Item>
-
-                    <Form.Item name="skill" label="Skills" rules={[{ required: true }]}>
-                        <Select
-                            allowClear
-                            placeholder="Select skill"
-                            onChange={onSkillChange}
-                            options={[
-                                { label: 'Batting', value: 'batting' },
-                                { label: 'Bowling', value: 'bowling' },
-                                { label: 'All-Rounder', value: 'allrounder' },
-                            ]}
-                        />
-                    </Form.Item>
-
-                    <Form.Item name="tshirtsize" label="T-Shirt Size" rules={[{ required: true }]}>
-                        <Select
-                            allowClear
-                            placeholder="Select T-Shirt Size"
-                            onChange={onSizeChange}
-                            options={[
-                                { label: 'XS (34 inch)', value: 'xs' },
-                                { label: 'S (36 inch)', value: 's' },
-                                { label: 'L (40 inch)', value: 'l' },
-                                { label: 'XL (42 inch)', value: 'xl' },
-                                { label: '2XL (44 inch)', value: '2xl' },
-                                { label: '3XL (46 inch)', value: '3xl' },
-                                { label: '4XL (48 inch)', value: '4xl' },
-                            ]}
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        label="Photo: "
-                        name="aadharid"
-                        valuePropName="fileList"
-                        getValueFromEvent={(e) => {
-                            if (Array.isArray(e)) return e;
-                            return e?.fileList;
-                        }}
-                        rules={[{ required: true, message: 'Please upload Aadhar photo ID' }]}
-                    >
-                        <Upload
-                            listType="picture"
-                            maxCount={1}
-                            beforeUpload={(file) => {
-                                const isImage =
-                                    file.type === "image/jpeg" ||
-                                    file.type === "image/png" ||
-                                    file.type === "image/jpg";
-                                if (!isImage) {
-                                    message.error("Only JPG/PNG files allowed");
-                                    return Upload.LIST_IGNORE;
-                                }
-                                const isLt5M = file.size / 1024 / 1024 < 0.5;
-                                if (!isLt5M) {
-                                    message.error("Image must be smaller than 500KB");
-                                    return Upload.LIST_IGNORE;
-                                }
-                                return false;
-                            }}
+                        <Form.Item
+                            label="Full Name"
+                            name="full_name"
+                            rules={[{ required: true, message: 'Please input your full name' }]}
                         >
-                            <Button icon={<UploadOutlined />}>Click to Upload</Button>
-                        </Upload>
-                    </Form.Item>
+                            <Input style={{ textTransform: "uppercase" }} placeholder="Full Name" />
+                        </Form.Item>
 
-                    <Form.Item
-                        label="Choice Number"
-                        name="choiceno"
-                        rules={[
-                            {
-                                required: false,
-                                message: 'Please input your choice no',
-                            }
-                        ]}
-                    >
-                        <Input placeholder="Choice No on T-Shirt" />
-                    </Form.Item>
+                        <Form.Item
+                            label="WhatsApp No"
+                            name="contact"
+                            rules={[
+                                { required: true, message: "Please enter phone number" },
+                                {
+                                    pattern: /^[6-9]\d{9}$/,
+                                    message: "Enter valid 10 digit mobile number",
+                                },
+                            ]}
+                        >
+                            <Input maxLength={10} placeholder="Contact No" />
+                        </Form.Item>
 
-                    <Form.Item
-                        label="Coupon Code"
-                        name="couponcode"
-                        rules={[{ required: false, message: 'CODE' }]}
-                    >
-                        <div className="flex">
-                            <Input placeholder="COUPON CODE" />
-                            <Button color="purple" variant="solid" className="ml-3 mr-3" onClick={CheckCodeApply}>Apply</Button>
-                            <div>{couponStatus()}</div>
-                        </div>
-                    </Form.Item>
+                        <Form.Item name="skill" label="Skills" rules={[{ required: true }]}>
+                            <Select
+                                allowClear
+                                placeholder="Select skill"
+                                onChange={onSkillChange}
+                                options={[
+                                    { label: 'Batting', value: 'batting' },
+                                    { label: 'Bowling', value: 'bowling' },
+                                    { label: 'All-Rounder', value: 'allrounder' },
+                                ]}
+                            />
+                        </Form.Item>
 
-                    <Form.Item label={null}>
-                        <Button type="primary" htmlType="submit">
-                            Submit & Pay
+                        <Form.Item name="tshirtsize" label="T-Shirt Size" rules={[{ required: true }]}>
+                            <Select
+                                allowClear
+                                placeholder="Select T-Shirt Size"
+                                onChange={onSizeChange}
+                                options={[
+                                    { label: 'XS (34 inch)', value: 'xs' },
+                                    { label: 'S (36 inch)', value: 's' },
+                                    { label: 'L (40 inch)', value: 'l' },
+                                    { label: 'XL (42 inch)', value: 'xl' },
+                                    { label: '2XL (44 inch)', value: '2xl' },
+                                    { label: '3XL (46 inch)', value: '3xl' },
+                                    { label: '4XL (48 inch)', value: '4xl' },
+                                ]}
+                            />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Photo: "
+                            name="aadharid"
+                            valuePropName="fileList"
+                            getValueFromEvent={(e) => {
+                                if (Array.isArray(e)) return e;
+                                return e?.fileList;
+                            }}
+                            rules={[{ required: true, message: 'Please upload Aadhar photo ID' }]}
+                        >
+                            <Upload
+                                listType="picture"
+                                maxCount={1}
+                                beforeUpload={(file) => {
+                                    const isImage =
+                                        file.type === "image/jpeg" ||
+                                        file.type === "image/png" ||
+                                        file.type === "image/jpg";
+                                    if (!isImage) {
+                                        message.error("Only JPG/PNG files allowed");
+                                        return Upload.LIST_IGNORE;
+                                    }
+                                    const isLt5M = file.size / 1024 / 1024 < 0.5;
+                                    if (!isLt5M) {
+                                        message.error("Image must be smaller than 500KB");
+                                        return Upload.LIST_IGNORE;
+                                    }
+                                    return false;
+                                }}
+                            >
+                                <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                            </Upload>
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Choice Number"
+                            name="choiceno"
+                            rules={[
+                                {
+                                    required: false,
+                                    message: 'Please input your choice no',
+                                }
+                            ]}
+                        >
+                            <Input placeholder="Choice No on T-Shirt" />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Coupon Code"
+                            name="couponcode"
+                            rules={[{ required: false, message: 'CODE' }]}
+                        >
+                            <div className="flex">
+                                <Input placeholder="COUPON CODE" />
+                                <Button color="purple" variant="solid" className="ml-3 mr-3" onClick={CheckCodeApply}>Apply</Button>
+                                <div>{couponStatus()}</div>
+                            </div>
+                        </Form.Item>
+
+                        <Form.Item label={null}>
+                            <Button type="primary" htmlType="submit">
+                                Submit & Pay
                         </Button>
-                    </Form.Item>
-                    {/* <Button type="link" htmlType="button" onClick={onFill}>
-                        Fill form
-                    </Button> */}
-                </Form>
+                        </Form.Item>
+                        <Button type="link" htmlType="button" onClick={onFill}>
+                            Fill form
+                    </Button>
+                    </Form>
+                </div>
+                <Modal
+                    title="Confirm and Pay"
+                    closable={{ 'aria-label': 'Custom Close Button' }}
+                    open={isModalOpen}
+                    footer={[
+                        <div style={{ textAlign: "right" }}>
+                            <Button type="primary" onClick={handleSubmit}>
+                                Submit
+                        </Button>
+                        </div>,
+                    ]}
+                    onCancel={handleCancel} >
+                    <p> Full Name : {form.getFieldValue("full_name")}</p>
+                    <p> WhatsApp No : {form.getFieldValue("contact")}</p>
+                    <p> Skills : {form.getFieldValue("skill")}</p>
+                    <p> T-Shirt Size : {form.getFieldValue("tshirtsize")}</p>
+                    <p> Choice Number on T-Shirt : {form.getFieldValue("choiceno")}</p>
+                </Modal>
             </div>
-            <Modal
-                title="Confirm Details and Pay"
-                closable={{ 'aria-label': 'Custom Close Button' }}
-                open={isModalOpen}
-                onOk={handleOk}
-                onCancel={handleCancel} >
-                <p> Full Name : {form.getFieldValue("full_name")}</p>
-                <p> WhatsApp No : {form.getFieldValue("contact")}</p>
-                <p> Skills : {form.getFieldValue("skill")}</p>
-                <p> T-Shirt Size : {form.getFieldValue("tshirtsize")}</p>
-                <p> Choice Number on T-Shirt : {form.getFieldValue("choiceno")}</p>
-            </Modal>
-        </div>
+        </Spin>
     )
 }
 

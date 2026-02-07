@@ -1,19 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { toast } from 'react-toastify'
-import { Table, Image, Modal } from "antd";
+import { Table, Image, Modal, Spin } from "antd";
 import { EyeOutlined } from "@ant-design/icons";
+import { useSelector, useDispatch } from 'react-redux'
 
-import { apiListPlayers, apiGetFile } from "../backend/api";
+import { apiGetFile } from "../backend/api";
+import { listPlayerLoadFlow } from "../backend/listPlayerSlice"
 import AppTitleBar from "./AppTitleBar";
 
 
+
 const ListPlayer = () => {
-    const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [visible, setVisible] = useState(false);
     const [img, setImg] = useState("");
+    const player = useSelector((state) => state.player)
+    const dispatch = useDispatch()
 
-    // Table columns
+    useEffect(() => {
+        dispatch(listPlayerLoadFlow());
+    }, [dispatch])
+
     const columns = [
         {
             title: "Player photo",
@@ -51,36 +58,13 @@ const ListPlayer = () => {
         }
     ];
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-
-            const resp = await apiListPlayers();
-            console.log("listplayer", resp)
-            // AntD Table expects each row to have unique `key`
-            const tableData = resp.data.data.map((item) => ({
-                ...item,
-                key: item.payment_id,
-            }));
-
-            setData(tableData);
-        } catch (error) {
-            toast.error("Failed to load data");
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const openImage = async (id) => {
-        const imgUrl = await apiGetFile(id);
+    const openImage = async (filename) => {
+        setLoading(true)
+        setVisible(true);
+        const imgUrl = await apiGetFile(filename);
         console.log(imgUrl)
         setImg(imgUrl);
-        setVisible(true);
+        setLoading(false)
     };
 
     return (
@@ -89,20 +73,30 @@ const ListPlayer = () => {
             <div className="mt-6">
                 <Table
                     columns={columns}
-                    dataSource={data}
-                    loading={loading}
+                    dataSource={player.playerList}
+                    loading={player.loading}
                 ></Table>
             </div>
-            <Modal
-                open={visible}
-                footer={null}
-                onCancel={() => setVisible(false)}
-                title="Photo"
-            >
-                <img src={img} />
+            <Modal title="Photo" open={visible} footer={null}
+                onCancel={() => setVisible(false)}>
+                {loading ? (
+                    <div style={{ textAlign: "center", padding: "40px" }}>
+                        <Spin size="large" />
+                    </div>
+                ) : (
+                    <div className="p-2">
+                        <Image src={img} />
+                    </div>
+                )}
             </Modal>
         </div>
     );
 };
 
 export default ListPlayer;
+
+{/* <Modal open={open} onOpenChange={fetchData}>
+  <Spin spinning={loading} tip="Loading...">
+    <div>Data Loaded Here</div>
+  </Spin>
+</Modal> */}

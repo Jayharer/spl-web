@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE_URL = "https://vlsprbsqri.execute-api.us-east-1.amazonaws.com/stage";
+const BASE_URL = "https://8mqq2q8cj8.execute-api.us-east-1.amazonaws.com/stage";
 
 
 export const apiSubmitForm = async (playerData) => {
